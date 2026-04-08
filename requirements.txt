@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+google-genai
+dateparser
+pydantic
+python-multipart

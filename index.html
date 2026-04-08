@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orchestix | Control Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --panel: #111827;
+            --accent: #8b5cf6;
+            --user-bubble: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+            --bot-bubble: rgba(31, 41, 55, 0.5);
+            --stroke: rgba(255, 255, 255, 0.05);
+        }
+        body { 
+            background-color: var(--bg); color: #e2e8f0; font-family: 'Inter', sans-serif; 
+            overflow: hidden; height: 100vh;
+        }
+        .glass-panel { 
+            background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid var(--stroke); 
+        }
+        .sidebar-left { width: 300px; flex-shrink: 0; }
+        .sidebar-right { width: 380px; flex-shrink: 0; }
+        
+        /* High-Definition Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        select {
+            background-color: #111827; border: 1px solid #1f2937; color: #94a3b8; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;
+        }
+
+        .chat-user { background: var(--user-bubble); border-radius: 18px 18px 2px 18px; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2); }
+        .chat-ai { background: var(--bot-bubble); border: 1px solid var(--stroke); border-radius: 18px 18px 18px 2px; }
+        
+        .agent-card { border-left: 3px solid #1f2937; transition: all 0.3s ease; border-radius: 16px; margin-bottom: 8px; }
+        .agent-card.active { border-left-color: var(--accent); background: rgba(139, 92, 246, 0.05); }
+        .status-pill { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: #111827; color: #64748b; font-weight: bold; }
+        .status-pill.done { background: rgba(30, 41, 59, 0.8); color: #94a3b8; }
+        
+        /* CALENDAR GRID STYLES */
+        #calendar-grid { 
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px;
+        }
+        .cal-day { 
+            padding: 8px 0; border-radius: 8px; background: #111827; border: 1px solid #1f2937; 
+            text-align: center; font-size: 11px; cursor: pointer; min-height: 38px; display: flex; 
+            align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .cal-day:hover { background: #1f2937; border-color: var(--accent); }
+        .cal-day.event { border-color: var(--accent); position: relative; }
+        .cal-day.event::after { 
+            content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); 
+            width: 4px; height: 4px; background: var(--accent); border-radius: 50%; 
+        }
+        .cal-day.today { border: 1px solid #10b981; color: #10b981; font-weight: bold; background: rgba(16, 185, 129, 0.05); }
+    </style>
+</head>
+<body class="flex p-4 gap-4">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar-left flex flex-col gap-4 h-full">
+        <div class="flex items-center gap-2 px-2 py-1">
+            <i class="fas fa-cog text-slate-500"></i>
+            <h1 class="text-xl font-bold text-white tracking-tight font-[Space Grotesk]">Control Center</h1>
+        </div>
+
+        <div class="flex flex-col gap-5 mt-2">
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Mode</label>
+                <select class="w-full px-4 py-3 rounded-xl text-sm outline-none focus:border-purple-500 transition-all">
+                    <option>Auto</option>
+                    <option>Manual</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Speed</label>
+                <select id="speed" class="w-full px-4 py-3 rounded-xl text-sm outline-none focus:border-purple-500 transition-all">
+                    <option value="300">Fast</option>
+                    <option value="800" selected>Realistic</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">AI Model Cluster</label>
+                <select class="w-full px-4 py-3 rounded-xl text-sm outline-none focus:border-purple-500 transition-all">
+                    <option>Gemini 2.5 Flash</option>
+                </select>
+            </div>
+            
+            <button onclick="clearLogs()" class="w-full py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-500/20 transition-all flex items-center justify-center gap-2 mt-2">
+                <i class="fas fa-broom"></i> Clear Cluster Logs
+            </button>
+        </div>
+
+        <div class="mt-4 flex-1 flex flex-col overflow-hidden">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2">Audit Logs</h3>
+            <div id="log-container" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-2 text-[10px] text-slate-600 font-mono"></div>
+        </div>
+    </aside>
+
+    <!-- CENTER HUB -->
+    <section class="flex-1 flex flex-col gap-4 h-full">
+        <div class="glass-panel rounded-[32px] flex-1 flex flex-col overflow-hidden border border-white/5">
+            <div class="p-4 border-b border-white/5 flex items-center justify-between">
+                <div id="status-header" class="text-[11px] text-slate-400 font-medium">Orchestix Node: Active Node April 2026</div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></span>
+                    <span class="text-[10px] font-semibold text-slate-500 uppercase">Node Online</span>
+                </div>
+            </div>
+
+            <div id="chat-container" class="flex-1 overflow-y-auto custom-scrollbar p-8 flex flex-col gap-8">
+                <div class="flex justify-center my-20">
+                    <div class="bg-slate-800/40 px-10 py-4 rounded-3xl border border-white/5 text-slate-500 text-sm font-medium">
+                        Start typing a command cluster...
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 bg-[#0b0e14]/50">
+                <div class="relative flex items-center gap-4">
+                    <input id="user-input" type="text" placeholder="Type instructions..." 
+                           class="flex-1 bg-[#111827] border border-slate-800 rounded-2xl px-6 py-5 text-sm outline-none focus:border-purple-500 transition-all"
+                           onkeypress="if(event.key === 'Enter') sendMessage()">
+                    <button onclick="sendMessage()" class="px-10 py-5 bg-purple-600 hover:bg-purple-500 rounded-2xl text-white text-sm font-bold shadow-xl transition-all active:scale-95">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="sidebar-right flex flex-col gap-4 h-full">
+        <div class="glass-panel rounded-3xl p-6 border border-white/5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white tracking-tight font-[Space Grotesk]">Calendar</h3>
+                <div class="flex gap-2">
+                    <button class="w-8 h-8 flex items-center justify-center rounded-xl bg-[#161b22] text-slate-400 hover:text-white" onclick="shiftMonth(-1)">&lt;</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded-xl bg-[#161b22] text-slate-400 hover:text-white" onclick="shiftMonth(1)">&gt;</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <button onclick="resetCalendar()" class="bg-slate-800/50 hover:bg-slate-700 py-2.5 rounded-xl text-[11px] font-bold border border-white/5 transition-all text-slate-300">RESET</button>
+                <button onclick="clearCalendar()" class="bg-slate-800/50 hover:bg-slate-700 py-2.5 rounded-xl text-[11px] font-bold border border-white/5 transition-all text-red-400">CLEAR</button>
+            </div>
+
+            <div id="cal-label" class="text-[11px] text-slate-500 font-bold mb-4 uppercase tracking-widest ml-1">April 2026</div>
+            <div id="calendar-grid"></div>
+            
+            <div id="task-list" class="flex flex-col gap-2 mt-4 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                <div class="text-[10px] text-slate-600 italic px-2">Cluster synchronized.</div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-2">
+            <div id="card-task" class="agent-card glass-panel p-5 flex flex-col gap-1">
+                <div class="flex justify-between items-center"><span class="text-sm font-bold flex items-center gap-2"><i class="fas fa-file-alt text-blue-400"></i> Task Node</span><span class="status-pill" id="task-status">Idle</span></div>
+                <p class="text-[11px] text-slate-500 mt-1" id="task-detail">-</p>
+            </div>
+            <div id="card-notes" class="agent-card glass-panel p-5 flex flex-col gap-1">
+                <div class="flex justify-between items-center"><span class="text-sm font-bold flex items-center gap-2"><i class="fas fa-sticky-note text-yellow-400"></i> Notes Node</span><span class="status-pill" id="notes-status">Idle</span></div>
+                <p class="text-[11px] text-slate-500 mt-1" id="notes-detail">-</p>
+            </div>
+            <div id="card-analyzer" class="agent-card glass-panel p-5 flex flex-col gap-1">
+                <div class="flex justify-between items-center"><span class="text-sm font-bold flex items-center gap-2"><i class="fas fa-brain text-pink-500"></i> Analyzer Node</span><span class="status-pill" id="analyzer-status">Idle</span></div>
+                <p class="text-[11px] text-slate-500 mt-1" id="analyzer-detail">-</p>
+            </div>
+            <div id="card-optimizer" class="agent-card glass-panel p-5 flex flex-col gap-1">
+                <div class="flex justify-between items-center"><span class="text-sm font-bold flex items-center gap-2"><i class="fas fa-bolt text-orange-400"></i> Optimizer Node</span><span class="status-pill" id="optimizer-status">Idle</span></div>
+                <p class="text-[11px] text-slate-500 mt-1" id="optimizer-detail">-</p>
+            </div>
+        </div>
+    </aside>
+
+    <script>
+        const chat = document.getElementById('chat-container');
+        const input = document.getElementById('user-input');
+        const logs = document.getElementById('log-container');
+        const statusHeader = document.getElementById('status-header');
+        const grid = document.getElementById('calendar-grid');
+        const label = document.getElementById('cal-label');
+
+        function appendLog(agent, msg) {
+            const entry = document.createElement('div');
+            entry.className = "py-1 border-b border-white/5 leading-tight flex gap-2";
+            entry.innerHTML = `<span class="text-purple-500 font-bold uppercase tracking-tighter">⚡ ${agent}</span> <span class="opacity-70">${msg}</span>`;
+            logs.prepend(entry);
+        }
+
+        function updateCard(id, msg, status) {
+            const card = document.getElementById(`card-${id.toLowerCase()}`);
+            if(!card) return;
+            card.classList.add('active');
+            const pill = document.getElementById(`${id.toLowerCase()}-status`);
+            pill.textContent = status || "Done";
+            pill.className = "status-pill done";
+            const detail = document.getElementById(`${id.toLowerCase()}-detail`);
+            detail.textContent = msg;
+            detail.className = "text-[11px] text-slate-300 mt-1 font-medium";
+        }
+
+        async function sendMessage() {
+            const text = input.value.trim();
+            if(!text) return;
+            input.value = '';
+
+            chat.innerHTML += `<div class="flex justify-end mb-4 animate-in fade-in slide-in-from-right-3">
+                <div class="chat-user px-8 py-5 text-sm text-white font-medium shadow-xl">You: ${text}</div>
+            </div>`;
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+                const res = await fetch('./agent', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({input: text})
+                });
+                const data = await res.json();
+                statusHeader.textContent = data.summary;
+
+                data.flow.forEach((step, idx) => {
+                    setTimeout(() => {
+                        const stepDiv = document.createElement('div');
+                        stepDiv.className = "mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500";
+                        stepDiv.innerHTML = `<div class="chat-ai px-6 py-5 max-w-[95%] shadow-lg">
+                            <div class="flex items-start gap-4">
+                                <span class="text-sm leading-relaxed text-slate-200">${step.message}</span>
+                            </div>
+                        </div>`;
+                        chat.appendChild(stepDiv);
+                        updateCard(step.agent, step.message, step.status);
+                        appendLog(step.agent, step.message);
+                        chat.scrollTop = chat.scrollHeight;
+                        if(idx === data.flow.length - 1) loadEvents();
+                    }, idx * 600);
+                });
+            } catch(e) {
+                appendLog("Error", "Node Link Failure.");
+            }
+        }
+
+        let calOffset = 0;
+        async function loadEvents() {
+            try {
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = 2026; 
+                
+                let displayDate = new Date(currentYear, currentMonth + calOffset, 1);
+                let viewMonth = displayDate.getMonth();
+                let viewYear = displayDate.getFullYear();
+                
+                label.textContent = displayDate.toLocaleString('default', { month: 'long', year: 'numeric' }).toUpperCase();
+
+                const firstDay = displayDate.getDay();
+                const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+                grid.innerHTML = '';
+                grid.style.display = 'grid';
+                grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+                grid.style.gap = '6px';
+
+                for(let i=0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
+                
+                let events = [];
+                try {
+                    const res = await fetch('./events');
+                    if(res.ok) events = await res.json();
+                } catch(e) {}
+
+                for(let i=1; i <= daysInMonth; i++) {
+                    const hasE = events.some(e => {
+                        const d = new Date(e.time);
+                        return d.getDate() === i && d.getMonth() === viewMonth && d.getFullYear() === viewYear;
+                    });
+                    const isToday = i === now.getDate() && viewMonth === now.getMonth() && viewYear === now.getFullYear();
+                    const dayEl = document.createElement('div');
+                    dayEl.className = `cal-day ${hasE ? 'event' : ''} ${isToday ? 'today' : ''}`;
+                    dayEl.textContent = i;
+                    grid.appendChild(dayEl);
+                }
+
+                const list = document.getElementById('task-list');
+                list.innerHTML = events.length ? events.map(e => `
+                    <div class="bg-slate-800/30 border border-white/5 px-4 py-3 rounded-xl text-[10px] text-slate-400 flex justify-between items-center shadow-inner">
+                        <span class="truncate pr-2 font-medium text-slate-300">${e.title}</span>
+                        <span class="text-[9px] text-slate-600 font-mono whitespace-nowrap">${e.time.split('T')[0]}</span>
+                    </div>`).join('') : '<div class="text-[10px] text-slate-700 italic px-2">Storage cluster synced.</div>';
+            } catch(e) {}
+        }
+
+        async function clearCalendar() {
+            if(!confirm("Wipe cluster node?")) return;
+            await fetch('./events', { method: 'DELETE' });
+            loadEvents();
+            appendLog("System", "Storage cluster purged.");
+        }
+
+        function resetCalendar() { calOffset = 0; loadEvents(); }
+        function clearLogs() { logs.innerHTML = ''; }
+        function shiftMonth(d) { calOffset += d; loadEvents(); }
+
+        window.onload = loadEvents;
+    </script>
+</body>
+</html>
